@@ -2102,11 +2102,17 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 29.895412, y: 80.00007, z: 29.895412}
   m_Center: {x: 0, y: 40.81557, z: 0}
---- !u!1 &1755809431 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4914710292495095536, guid: cced6dd5d8703e342bae41db9f0e00da, type: 3}
+--- !u!114 &1755809432 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6823411188266275452, guid: cced6dd5d8703e342bae41db9f0e00da, type: 3}
   m_PrefabInstance: {fileID: 6753887777171623501}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 605de38112542084b959dc8cb70dc7a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlyingAircraft
 --- !u!1001 &1849072490
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2235,7 +2241,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74da3a0d65164aa9918d8bf826901f15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlyingAircraftWaveSpawner
-  aircraftPrefab: {fileID: 1755809431}
+  aircraftPrefab: {fileID: 1755809432}
   target: {fileID: 681859874}
   minimumSpawnDistance: 600
   maximumSpawnDistance: 1500

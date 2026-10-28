@@ -5,7 +5,7 @@ using UnityEngine;
 public class FlyingAircraftWaveSpawner : MonoBehaviour
 {
     [Header("Wave setup")]
-    [SerializeField] private GameObject aircraftPrefab;
+    [SerializeField] private FlyingAircraft aircraftPrefab;
     [SerializeField] private Transform target;
     [SerializeField, Min(0f)] private float minimumSpawnDistance = 1000f;
     [SerializeField, Min(0f)] private float maximumSpawnDistance = 8000f;
@@ -21,23 +21,17 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
     private CharacterCustomization characterCustomization;
     private GUIStyle waveStatusStyle;
     private int displayedWaveNumber = 1;
+    private int completedWaveNumber;
     private float incomingSecondsRemaining;
+    private float completedWaveDisplayUntil;
     private bool hasStartedWaves;
     private bool isWaveIncoming = true;
-    private bool isWaveComplete;
 
     private void Start()
     {
         if (aircraftPrefab == null)
         {
             Debug.LogError("Assign an aircraft prefab to the wave spawner.", this);
-            enabled = false;
-            return;
-        }
-
-        if (aircraftPrefab.GetComponentInChildren<FlyingAircraft>(true) == null)
-        {
-            Debug.LogError("The assigned aircraft prefab must contain a FlyingAircraft component.", this);
             enabled = false;
             return;
         }
@@ -79,7 +73,6 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
 
             displayedWaveNumber = waveNumber;
             isWaveIncoming = true;
-            isWaveComplete = false;
             incomingSecondsRemaining = timeBetweenWaves;
             while (incomingSecondsRemaining > 0f)
             {
@@ -103,18 +96,10 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
                     heightOffset,
                     horizontalDirection.y * spawnDistance);
 
-                GameObject aircraftObject = Instantiate(
+                FlyingAircraft aircraft = Instantiate(
                     aircraftPrefab,
                     spawnPosition,
                     Quaternion.identity);
-                FlyingAircraft aircraft = aircraftObject.GetComponentInChildren<FlyingAircraft>(true);
-                if (aircraft == null)
-                {
-                    Debug.LogError($"Cannot spawn wave {waveNumber}: the spawned prefab has no FlyingAircraft component.", aircraftObject);
-                    Destroy(aircraftObject);
-                    yield break;
-                }
-
                 aircraft.InitializeWaveSpawn(target, speedMultiplier);
                 currentWaveAircraft.Add(aircraft);
             }
@@ -124,12 +109,8 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
                 yield return null;
             }
 
-            isWaveComplete = true;
-            if (waveCompleteDisplayDuration > 0f)
-            {
-                yield return new WaitForSecondsRealtime(waveCompleteDisplayDuration);
-            }
-
+            completedWaveNumber = waveNumber;
+            completedWaveDisplayUntil = Time.unscaledTime + waveCompleteDisplayDuration;
             waveNumber++;
         }
     }
@@ -151,16 +132,20 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
 
         string statusText;
         Color statusColor;
-        if (isWaveComplete)
-        {
-            statusText = $"WAVE {displayedWaveNumber} COMPLETE";
-            statusColor = new Color(0.35f, 1f, 0.55f);
-        }
-        else if (isWaveIncoming)
+        if (isWaveIncoming)
         {
             int seconds = Mathf.CeilToInt(incomingSecondsRemaining);
-            statusText = $"WAVE {displayedWaveNumber} INCOMING\n{seconds} SECOND{(seconds == 1 ? string.Empty : "S")}";
-            statusColor = new Color(1f, 0.76f, 0.28f);
+            string incomingText = $"WAVE {displayedWaveNumber} INCOMING\n{seconds} SECOND{(seconds == 1 ? string.Empty : "S")}";
+            if (Time.unscaledTime < completedWaveDisplayUntil)
+            {
+                statusText = $"WAVE {completedWaveNumber} COMPLETE\n{incomingText}";
+                statusColor = new Color(0.55f, 1f, 0.55f);
+            }
+            else
+            {
+                statusText = incomingText;
+                statusColor = new Color(1f, 0.76f, 0.28f);
+            }
         }
         else
         {
@@ -168,7 +153,7 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
             statusColor = Color.white;
         }
 
-        Rect backgroundRect = new Rect(Screen.width * 0.5f - 190f, 12f, 380f, 66f);
+        Rect backgroundRect = new Rect(Screen.width * 0.5f - 190f, 12f, 380f, 88f);
         Color previousColor = GUI.color;
         GUI.color = new Color(0f, 0f, 0f, 0.6f);
         GUI.DrawTexture(backgroundRect, Texture2D.whiteTexture);

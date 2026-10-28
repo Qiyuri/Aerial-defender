@@ -912,9 +912,21 @@ MonoBehaviour:
   sprintSpeedMultiplier: 1.75
   jumpForce: 7
   showCharacterCustomizationOnStart: 0
+  respawnDebounceSeconds: 1
   unarmedObject: {fileID: 0}
   sniperWeapon: {fileID: 0}
   bazookaWeapon: {fileID: 0}
+  bazookaMuzzle: {fileID: 2240377076360139042}
+  bazookaProjectilePrefab: {fileID: 100100000, guid: a2bae04bb80342743acf1cffb4e9feb7, type: 3}
+  bazookaProjectileSpeed: 80
+  bazookaProjectileLifetime: 8
+  bazookaFireInterval: 0.8
+  bazookaMuzzleForwardOffset: 0.35
+  bazookaDamage: 5
+  sniperProjectileSpeed: 250
+  sniperRange: 500
+  sniperFireInterval: 0.6
+  sniperDamage: 2.5
 --- !u!1 &3837668570902114302
 GameObject:
   m_ObjectHideFlags: 0

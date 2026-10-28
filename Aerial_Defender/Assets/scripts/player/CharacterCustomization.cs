@@ -20,7 +20,7 @@ public class CharacterCustomization : MonoBehaviour
     private static readonly string[][] ObjectNames =
     {
         new[] { "Capsule" },
-        new[] { "s", "s (1)" },
+        new[] { "arms", "armL", "armR", "armlL" },
         new[] { "Sphere" },
         new[] { "Cone" },
         new[] { "beard" },
@@ -47,6 +47,8 @@ public class CharacterCustomization : MonoBehaviour
     private bool listenerWasEnabled;
     private bool gravityWasEnabled;
     private float previousTimeScale;
+    private Vector3 customizationStartPosition;
+    private Quaternion customizationStartRotation;
     private float hue;
     private float saturation;
     private float brightness;
@@ -80,6 +82,8 @@ public class CharacterCustomization : MonoBehaviour
         listenerWasEnabled = playerAudioListener != null && playerAudioListener.enabled;
         gravityWasEnabled = body != null && body.useGravity;
         previousTimeScale = Time.timeScale;
+        customizationStartPosition = body != null ? body.position : transform.position;
+        customizationStartRotation = body != null ? body.rotation : transform.rotation;
 
         movement.enabled = false;
         cameraController.enabled = false;
@@ -89,15 +93,31 @@ public class CharacterCustomization : MonoBehaviour
         {
             body.useGravity = false;
             body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
         }
 
+        isCustomizing = true;
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
+        Physics.SyncTransforms();
         InitializeParts();
         CreatePreviewCamera();
-        isCustomizing = true;
+
+        Vector3 previewOffset = Vector3.up * 100f;
+        if (body != null)
+        {
+            body.position = customizationStartPosition + previewOffset;
+        }
+        else
+        {
+            transform.position = customizationStartPosition + previewOffset;
+        }
+
+        defaultPreviewPosition += previewOffset;
+        previewCamera.transform.position += previewOffset;
+        Physics.SyncTransforms();
     }
 
     private void InitializeParts()
@@ -114,26 +134,12 @@ public class CharacterCustomization : MonoBehaviour
             };
             parts[i] = part;
 
-            bool foundPart = false;
             foreach (string objectName in part.objectNames)
             {
                 Transform partTransform = FindDescendant(transform, objectName);
                 if (partTransform == null) continue;
 
-                foundPart = true;
                 part.objects.Add(partTransform);
-                Renderer[] renderers = objectName == "beard"
-                    ? partTransform.GetComponentsInChildren<Renderer>(true)
-                    : partTransform.GetComponents<Renderer>();
-
-                foreach (Renderer partRenderer in renderers)
-                {
-                    foreach (Material material in partRenderer.materials)
-                    {
-                        if (material == null) continue;
-                        part.materials.Add(material);
-                    }
-                }
 
                 if (part.isAccessory)
                 {
@@ -141,13 +147,62 @@ public class CharacterCustomization : MonoBehaviour
                 }
             }
 
-            if (!foundPart) Debug.LogWarning("Character customization could not find the '" + part.label + "' part.", this);
+        }
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer partRenderer in renderers)
+        {
+            Material[] sourceMaterials = partRenderer.sharedMaterials;
+            Material[] instanceMaterials = partRenderer.materials;
+            for (int materialIndex = 0; materialIndex < sourceMaterials.Length; materialIndex++)
+            {
+                Material sourceMaterial = sourceMaterials[materialIndex];
+                if (sourceMaterial == null || materialIndex >= instanceMaterials.Length) continue;
+
+                Part part = FindPartForMaterial(sourceMaterial.name);
+                if (part != null && instanceMaterials[materialIndex] != null)
+                {
+                    part.materials.Add(instanceMaterials[materialIndex]);
+                }
+            }
+        }
+
+        foreach (Part part in parts)
+        {
+            if (part.materials.Count == 0)
+            {
+                Debug.LogWarning("Character customization could not find a renderer using the expected material for '" + part.label + "'.", this);
+            }
+
             InitializeColor(part);
         }
 
         hue = parts[0].hue;
         saturation = parts[0].saturation;
         brightness = parts[0].value;
+    }
+
+    private Part FindPartForMaterial(string materialName)
+    {
+        string normalizedName = materialName.ToLowerInvariant();
+        if (normalizedName.Contains("pupil")) return FindPart("Pupils");
+        if (normalizedName.Contains("eye")) return FindPart("Eye White");
+        if (normalizedName.Contains("beard")) return FindPart("Beard");
+        if (normalizedName.Contains("hat")) return FindPart("Hat");
+        if (normalizedName.Contains("head")) return FindPart("Head");
+        if (normalizedName.Contains("shirt")) return FindPart("Shirt");
+        if (normalizedName.Contains("arm")) return FindPart("Arms");
+        return null;
+    }
+
+    private Part FindPart(string label)
+    {
+        foreach (Part part in parts)
+        {
+            if (part.label == label) return part;
+        }
+
+        return null;
     }
 
     private static Transform FindDescendant(Transform parent, string objectName)
@@ -466,6 +521,19 @@ public class CharacterCustomization : MonoBehaviour
 
     private void RestoreGameplayState()
     {
+        if (body != null)
+        {
+            body.position = customizationStartPosition;
+            body.rotation = customizationStartRotation;
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+        }
+        else
+        {
+            transform.SetPositionAndRotation(customizationStartPosition, customizationStartRotation);
+        }
+
+        Physics.SyncTransforms();
         playerCamera.enabled = cameraWasEnabled;
         if (playerAudioListener != null) playerAudioListener.enabled = listenerWasEnabled;
         cameraController.enabled = controllerWasEnabled;

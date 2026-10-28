@@ -81,6 +81,20 @@ public class CameraController : MonoBehaviour
         transform.localRotation = initialLocalRotation * Quaternion.Euler(pitch, yaw, 0f);
     }
 
+    public Vector3 GetLookRelativeMovement(Vector2 input)
+    {
+        Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        Vector3 right = Vector3.ProjectOnPlane(transform.right, Vector3.up).normalized;
+        return right * input.x + forward * input.y;
+    }
+
+    public void ResetLookDirection()
+    {
+        yaw = 0f;
+        pitch = 0f;
+        transform.localRotation = initialLocalRotation;
+    }
+
     void OnApplicationFocus(bool hasFocus)
     {
         if (hasFocus && enabled) LockCursor();

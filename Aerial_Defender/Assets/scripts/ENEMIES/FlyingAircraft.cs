@@ -124,11 +124,17 @@ public class FlyingAircraft : MonoBehaviour
         Vector3 toTarget = targetPosition - transform.position;
         float distance = toTarget.magnitude;
         Vector3 directionToTarget = distance > 0.001f ? toTarget / distance : transform.forward;
+        Vector3 horizontalDirection = Vector3.ProjectOnPlane(directionToTarget, Vector3.up).normalized;
+        if (horizontalDirection.sqrMagnitude < 0.001f)
+        {
+            horizontalDirection = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            if (horizontalDirection.sqrMagnitude < 0.001f) horizontalDirection = Vector3.forward;
+        }
+
+        Vector3 right = Vector3.Cross(Vector3.up, horizontalDirection).normalized;
         Vector3 referenceUp = Mathf.Abs(Vector3.Dot(directionToTarget, Vector3.up)) > 0.99f
             ? Vector3.forward
             : Vector3.up;
-        Vector3 right = Vector3.Cross(referenceUp, directionToTarget).normalized;
-        Vector3 up = Vector3.Cross(directionToTarget, right).normalized;
         UpdateEnginePitch(distance);
 
         if (distance <= 2.5f)
@@ -152,7 +158,7 @@ public class FlyingAircraft : MonoBehaviour
             float movementMultiplier = 1f + (intensity - 1f) * straightening;
 
             Vector3 weaveVelocity = right * Mathf.Cos(Time.time * weaveSpeed) * weaveWidth * weaveSpeed * movementMultiplier;
-            Vector3 bobVelocity = up * Mathf.Cos(Time.time * bobSpeed) * bobHeight * bobSpeed * movementMultiplier;
+            Vector3 bobVelocity = Vector3.up * Mathf.Cos(Time.time * bobSpeed) * bobHeight * bobSpeed * movementMultiplier;
             currentVelocity = directionToTarget * speed + weaveVelocity + bobVelocity;
         }
 
@@ -160,7 +166,7 @@ public class FlyingAircraft : MonoBehaviour
         Quaternion offset = Quaternion.Euler(modelRotationOffset);
         Vector3 offsetNoseAxis = offset * noseAxis;
         Quaternion modelAlignment = Quaternion.FromToRotation(offsetNoseAxis, Vector3.forward) * offset;
-        Quaternion lookRotation = Quaternion.LookRotation(directionToTarget, up)
+        Quaternion lookRotation = Quaternion.LookRotation(directionToTarget, referenceUp)
             * modelAlignment;
         transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 10f);
     }

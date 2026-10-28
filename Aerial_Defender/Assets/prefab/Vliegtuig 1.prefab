@@ -88,7 +88,17 @@ MonoBehaviour:
   weaveSpeed: 1
   bobHeight: 8
   weaveWidth: 20
-  target: {fileID: 1055257059434475128, guid: 8bd368737fe648a4c88e39f2259b9873, type: 3}
+  targets: []
+  target: {fileID: 8321924873179832394, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
+  straightFlightDistance: 50
+  intensityStartDistance: 500
+  maxMovementMultiplier: 2.5
+  straightenTransitionDistance: 10
+  engineSound: {fileID: 0}
+  engineAudio: {fileID: 0}
+  pitchAtTarget: 0.6
+  pitchAtDistance: 1
+  pitchDistance: 500
   modelForwardAxis: {x: 0, y: -1, z: 0}
   modelRotationOffset: {x: 0, y: 0, z: 90}
 --- !u!54 &3226793027879357938

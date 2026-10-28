@@ -1,67 +1,56 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-public class FirstPersonController : MonoBehaviour
+public class CameraController : MonoBehaviour
 {
-    [Header("Movement Settings")]
-    public float moveSpeed = 5f;
-    public float jumpForce = 10f;
-
     [Header("Camera & FOV Settings")]
-    public int minFov = 60;
-    public int maxFov = 90;
+    public float minFov = 60f;
+    public float maxFov = 90f;
     public float fovSensitivity = 1f;
+    
+    // Verwijderd: Rigidbody component en bewegingsvariabelen
+    
+    private Camera playerCamera;
 
-    [Header("References")]
-    public Camera playerCamera;
-
-    private Rigidbody rb;
-    private float yaw;
-    private float pitch;
-
-    private void Start()
+    void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        if (rb == null)
-        {
-            Debug.LogError("Missing Rigidbody! Please add a Rigidbody component to this object.");
-            return;
-        }
-
-        rb.freezeRotation = true;
-
+        // Probeer de Camera te vinden. Als deze niet bestaat, creëer er één op dit object.
         if (playerCamera == null)
         {
-            playerCamera = GetComponentInChildren<Camera>();
+            playerCamera = GetComponent<Camera>();
+            if (playerCamera == null)
+            {
+                Debug.LogError("Missing Camera! Please add a Camera component to this object.");
+            }
+            else
+            {
+                playerCamera.fieldOfView = minFov;
+            }
         }
-
-        if (playerCamera != null)
-        {
-            playerCamera.fieldOfView = minFov;
-        }
+        
+        // Zorg dat de rotatie niet verandert door andere krachten (hoewel er geen Rigidbody meer is)
+        rigidbodyMode();
     }
 
-    private void Update()
+    void Update()
     {
-        if (rb == null)
-        {
-            return;
-        }
+        // Verwijderd: Check voor Rigidbody null
+            
+        if (playerCamera == null) return;
 
+        // Links naar Rechts kijken (Yaw)
         float mouseX = Input.GetAxis("Mouse X");
+        transform.Rotate(0f, mouseX * 2f, 0f); // Draai het hoofd object
+        
+        // Naar Boven naar Onder kijken (Pitch - Camera zelf draaien)
         float mouseY = Input.GetAxis("Mouse Y");
+        playerCamera.transform.Rotate(0f, -mouseY * 2f, 0f);
 
-        yaw += mouseX;
-        pitch -= mouseY;
-        pitch = Mathf.Clamp(pitch, -89f, 89f);
+        // Limiteer hoe ver je kunt kijken om over je hoofd heen te voorkomen
+        Vector3 camPos = playerCamera.transform.localPosition;
+        camPos.y = Mathf.Clamp(camPos.y, -90f, 90f);
+        playerCamera.transform.localPosition = camPos;
 
-        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-
-        if (playerCamera != null)
-        {
-            playerCamera.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-        }
-
+        // Verander de zoom (FOV) met de muiswiel
         float scroll = Input.mouseScrollDelta.y;
         if (Mathf.Abs(scroll) > 0.01f && playerCamera != null)
         {
@@ -69,20 +58,13 @@ public class FirstPersonController : MonoBehaviour
             playerCamera.fieldOfView = Mathf.Clamp(targetFov, minFov, maxFov);
         }
 
-        float x = Input.GetAxisRaw("Horizontal");
-        float z = Input.GetAxisRaw("Vertical");
-
-        Vector3 move = transform.right * x + transform.forward * z;
-        if (move.sqrMagnitude > 1f)
-        {
-            move.Normalize();
-        }
-
-        rb.linearVelocity = new Vector3(move.x * moveSpeed, rb.linearVelocity.y, move.z * moveSpeed);
-
-        if (Input.GetButtonDown("Jump") && Mathf.Abs(rb.linearVelocity.y) < 0.01f)
-        {
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
-        }
+        // Verwijderd: Alle bewegingslogica (transform.right/forward en Rigidbody.linearVelocity)
+    }
+    
+    // Helper method om te simuleren dat rotatie bevroren is als er ooit een Rigidbody was
+    private void rigidbodyMode() 
+    {
+        // Geen Rigidbody nodig voor pure camera rotatie, dus dit kan leeg blijven of worden verwijderd.
     }
 }
+

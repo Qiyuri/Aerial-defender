@@ -67,5 +67,11 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "Aerial_Defender.slnx"
+    "dotnet.defaultSolution": "Aerial_Defender.slnx",
+    "chat.tools.terminal.autoApprove": {
+        "/^dotnet build Assembly-CSharp\\.csproj --no-restore$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
 }

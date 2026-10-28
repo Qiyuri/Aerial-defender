@@ -60,6 +60,8 @@ public class CharacterCustomization : MonoBehaviour
     private GUIStyle valueStyle;
     private GUIStyle buttonStyle;
 
+    public bool IsCustomizing => isCustomizing;
+
     private void Awake()
     {
         movement = GetComponent<Movement>();

@@ -103,6 +103,7 @@ public class Movement : MonoBehaviour
         {
             moveInput = Vector2.zero;
             isSprinting = false;
+            if (cameraController != null) cameraController.SetMovementLean(0f, false);
             return;
         }
 
@@ -126,6 +127,11 @@ public class Movement : MonoBehaviour
         }
 
         moveInput = Vector2.ClampMagnitude(moveInput, 1f);
+        if (cameraController != null)
+        {
+            cameraController.SetMovementLean(moveInput.x, selectedWeaponSlot != 0);
+        }
+
         if (keyboard.spaceKey.wasPressedThisFrame)
         {
             jumpRequested = true;

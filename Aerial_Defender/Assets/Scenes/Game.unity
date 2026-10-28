@@ -1599,7 +1599,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
       propertyPath: jumpForce
-      value: 0
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
+      propertyPath: moveSpeed
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
       propertyPath: sniperRange
@@ -1626,12 +1630,28 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
+      propertyPath: bazookaFireInterval
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
       propertyPath: groundCheckDistance
-      value: 0.5
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
+      propertyPath: sniperAimFieldOfView
+      value: 6.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
+      propertyPath: bazookaAimFieldOfView
+      value: 16.1
       objectReference: {fileID: 0}
     - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
       propertyPath: sniperProjectileSpeed
       value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
+      propertyPath: sprintSpeedMultiplier
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7146137775846529328, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
       propertyPath: bazookaProjectileSpeed
@@ -2082,6 +2102,11 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 29.895412, y: 80.00007, z: 29.895412}
   m_Center: {x: 0, y: 40.81557, z: 0}
+--- !u!1 &1755809431 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4914710292495095536, guid: cced6dd5d8703e342bae41db9f0e00da, type: 3}
+  m_PrefabInstance: {fileID: 6753887777171623501}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1849072490
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2210,14 +2235,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74da3a0d65164aa9918d8bf826901f15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlyingAircraftWaveSpawner
-  aircraftPrefab: {fileID: 5082119878838104430}
+  aircraftPrefab: {fileID: 1755809431}
   target: {fileID: 681859874}
-  minimumSpawnDistance: 400
-  maximumSpawnDistance: 1000
-  maximumHeightDifference: 50
+  minimumSpawnDistance: 600
+  maximumSpawnDistance: 1500
+  maximumHeightDifference: 100
   timeBetweenWaves: 5
   firstWaveSpeedMultiplier: 0.5
   speedIncreasePerPairOfWaves: 0.05
+  waveCompleteDisplayDuration: 2
 --- !u!1001 &1921331740
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2567,17 +2593,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 2091383121}
   m_SourcePrefab: {fileID: 100100000, guid: df20c7c693bece84685d6ba21467cbb4, type: 3}
---- !u!114 &5082119878838104430 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6823411188266275452, guid: cced6dd5d8703e342bae41db9f0e00da, type: 3}
-  m_PrefabInstance: {fileID: 6753887777171623501}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 605de38112542084b959dc8cb70dc7a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FlyingAircraft
 --- !u!1001 &6753887777171623501
 PrefabInstance:
   m_ObjectHideFlags: 0

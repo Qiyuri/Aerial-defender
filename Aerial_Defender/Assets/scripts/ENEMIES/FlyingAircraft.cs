@@ -31,6 +31,8 @@ public class FlyingAircraft : MonoBehaviour
     [SerializeField] private float maxMovementMultiplier = 2.5f;
     [Tooltip("Smoothly fade out bob and weave just before entering the straight-flight distance.")]
     [SerializeField] private float straightenTransitionDistance = 10f;
+    [SerializeField, Min(0f)] private float weaveLeanAngle = 15f;
+    [SerializeField, Min(0f)] private float weaveLeanResponse = 6f;
 
     [Header("Damage and falling")]
     [SerializeField] private float hitPoints = 5f;
@@ -70,6 +72,7 @@ public class FlyingAircraft : MonoBehaviour
     private int hitEffectPointMask;
     private bool healthInitialized;
     private bool hasWaveTargetOverride;
+    private float currentWeaveLeanAngle;
 
     public bool IsVisibleOnRadar => isActiveAndEnabled && currentHitPoints > 0f;
     public bool IsDefeated => !isActiveAndEnabled || (healthInitialized && currentHitPoints <= 0f);
@@ -194,10 +197,12 @@ public class FlyingAircraft : MonoBehaviour
         if (distance <= 2.5f)
         {
             currentVelocity = Vector3.zero;
+            currentWeaveLeanAngle = Mathf.Lerp(currentWeaveLeanAngle, 0f, 1f - Mathf.Exp(-weaveLeanResponse * Time.deltaTime));
         }
         else if (distance <= straightFlightDistance)
         {
             currentVelocity = directionToTarget * speed * speedMultiplier;
+            currentWeaveLeanAngle = Mathf.Lerp(currentWeaveLeanAngle, 0f, 1f - Mathf.Exp(-weaveLeanResponse * Time.deltaTime));
         }
         else
         {
@@ -214,9 +219,19 @@ public class FlyingAircraft : MonoBehaviour
             Vector3 weaveVelocity = right * Mathf.Cos(Time.time * weaveSpeed) * weaveWidth * weaveSpeed * movementMultiplier;
             Vector3 bobVelocity = Vector3.up * Mathf.Cos(Time.time * bobSpeed) * bobHeight * bobSpeed * movementMultiplier;
             currentVelocity = (directionToTarget * speed + weaveVelocity + bobVelocity) * speedMultiplier;
+            float leanFade = straightening * Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.InverseLerp(straightFlightDistance, intensityStartDistance, distance));
+            float targetLeanAngle = -Mathf.Sin(Time.time * weaveSpeed) * weaveLeanAngle * leanFade;
+            currentWeaveLeanAngle = Mathf.Lerp(
+                currentWeaveLeanAngle,
+                targetLeanAngle,
+                1f - Mathf.Exp(-weaveLeanResponse * Time.deltaTime));
         }
 
         Quaternion lookRotation = GetModelLookRotation(directionToTarget, referenceUp);
+        lookRotation = Quaternion.AngleAxis(currentWeaveLeanAngle, directionToTarget) * lookRotation;
         transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 10f);
     }
 

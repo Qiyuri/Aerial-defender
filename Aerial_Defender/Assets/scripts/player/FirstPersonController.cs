@@ -19,6 +19,10 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float crosshairGap = 5f;
     [SerializeField] private float crosshairThickness = 2f;
 
+    [Header("Movement camera lean")]
+    [SerializeField, Min(0f)] private float movementCameraLeanAngle = 5f;
+    [SerializeField, Min(0.01f)] private float movementCameraReturnDuration = 0.5f;
+
     [Header("Aircraft radar")]
     [SerializeField] private bool showAircraftRadar = true;
     [SerializeField, Min(0.05f)] private float radarRefreshInterval = 0.25f;
@@ -39,6 +43,12 @@ public class CameraController : MonoBehaviour
     private GUIStyle radarHeaderStyle;
     private GUIStyle radarRangeStyle;
     private float nextRadarRefreshTime;
+    private float currentMovementCameraRoll;
+    private float movementCameraTransitionStartRoll;
+    private float movementCameraTransitionTargetRoll;
+    private float movementCameraTransitionElapsed;
+    private int previousMovementLeanDirection;
+    private bool isTransitioningMovementCameraRoll;
     private Quaternion initialLocalRotation;
     private Vector3 initialCameraLocalPosition;
     private Quaternion initialCameraLocalRotation;
@@ -106,6 +116,7 @@ public class CameraController : MonoBehaviour
             playerCamera.fieldOfView,
             targetFieldOfView,
             interpolation);
+        UpdateMovementCameraRoll();
     }
 
     private void OnGUI()
@@ -187,10 +198,10 @@ public class CameraController : MonoBehaviour
 
         Matrix4x4 previousMatrix = GUI.matrix;
         Color previousColor = GUI.color;
-        float radarSize = Mathf.Clamp(Mathf.Min(Screen.width * 0.32f, Screen.height * 0.38f), 150f, 260f);
+        float radarSize = Mathf.Clamp(Mathf.Min((Screen.width - 60f) * 0.32f, Screen.height * 0.38f), 150f, 260f);
         float panelWidth = radarSize + 28f;
         float panelHeight = radarSize + 58f;
-        float panelX = (Screen.width - panelWidth) * 0.5f;
+        float panelX = Screen.width - panelWidth - 16f;
         const float panelY = 12f;
         Rect panelRect = new Rect(panelX, panelY, panelWidth, panelHeight);
         Rect radarRect = new Rect(
@@ -373,6 +384,61 @@ public class CameraController : MonoBehaviour
         aimSensitivityMultiplier = Mathf.Max(0f, multiplier);
     }
 
+    public void SetMovementLean(float horizontalInput, bool allowLean)
+    {
+        int direction = allowLean && Mathf.Abs(horizontalInput) > 0.001f
+            ? (horizontalInput > 0f ? 1 : -1)
+            : 0;
+        if (direction == 0)
+        {
+            bool wasLeaning = previousMovementLeanDirection != 0;
+            previousMovementLeanDirection = 0;
+            if (wasLeaning)
+            {
+                StartMovementCameraRollTransition(0f);
+            }
+
+            return;
+        }
+
+        if (direction == previousMovementLeanDirection) return;
+
+        previousMovementLeanDirection = direction;
+        StartMovementCameraRollTransition(-direction * movementCameraLeanAngle);
+    }
+
+    private void StartMovementCameraRollTransition(float targetRoll)
+    {
+        movementCameraTransitionStartRoll = currentMovementCameraRoll;
+        movementCameraTransitionTargetRoll = targetRoll;
+        movementCameraTransitionElapsed = 0f;
+        isTransitioningMovementCameraRoll = true;
+    }
+
+    private void UpdateMovementCameraRoll()
+    {
+        if (isTransitioningMovementCameraRoll)
+        {
+            movementCameraTransitionElapsed += Time.deltaTime;
+            float recoveryProgress = Mathf.Clamp01(
+                movementCameraTransitionElapsed / movementCameraReturnDuration);
+            currentMovementCameraRoll = Mathf.Lerp(
+                movementCameraTransitionStartRoll,
+                movementCameraTransitionTargetRoll,
+                Mathf.SmoothStep(0f, 1f, recoveryProgress));
+            if (recoveryProgress >= 1f)
+            {
+                isTransitioningMovementCameraRoll = false;
+            }
+        }
+
+        if (playerCamera != null)
+        {
+            playerCamera.transform.localRotation =
+                initialCameraLocalRotation * Quaternion.AngleAxis(currentMovementCameraRoll, Vector3.forward);
+        }
+    }
+
     public Ray GetAimRay()
     {
         if (playerCamera != null)
@@ -412,6 +478,12 @@ public class CameraController : MonoBehaviour
         yaw = 0f;
         pitch = 0f;
         transform.localRotation = initialLocalRotation;
+        currentMovementCameraRoll = 0f;
+        movementCameraTransitionStartRoll = 0f;
+        movementCameraTransitionTargetRoll = 0f;
+        movementCameraTransitionElapsed = 0f;
+        previousMovementLeanDirection = 0;
+        isTransitioningMovementCameraRoll = false;
         if (playerCamera != null)
         {
             playerCamera.transform.localPosition = initialCameraLocalPosition;

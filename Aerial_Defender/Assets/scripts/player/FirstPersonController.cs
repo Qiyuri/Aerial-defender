@@ -6,6 +6,7 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float mouseSensitivity = 2f;
     [SerializeField] private float verticalLookLimit = 50f;
     [SerializeField] private float horizontalLookLimit = 90f;
+    [SerializeField] private float bodyTurnSpeed = 240f;
 
     [Header("Aim FOV")]
     [SerializeField] private float aimFieldOfView = 30f;
@@ -61,6 +62,23 @@ public class CameraController : MonoBehaviour
             playerCamera.fieldOfView,
             targetFieldOfView,
             interpolation);
+    }
+
+    public void AlignBodyToLookDirection(Rigidbody body, float deltaTime)
+    {
+        if (playerCamera == null || body == null) return;
+
+        Vector3 lookDirection = Vector3.ProjectOnPlane(playerCamera.transform.forward, Vector3.up).normalized;
+        if (lookDirection.sqrMagnitude < 0.001f) return;
+
+        Vector3 bodyForward = Vector3.ProjectOnPlane(body.rotation * Vector3.forward, Vector3.up).normalized;
+        float yawToLookDirection = Vector3.SignedAngle(bodyForward, lookDirection, Vector3.up);
+        float appliedYaw = Mathf.MoveTowards(0f, yawToLookDirection, bodyTurnSpeed * deltaTime);
+        if (Mathf.Approximately(appliedYaw, 0f)) return;
+
+        body.MoveRotation(Quaternion.AngleAxis(appliedYaw, Vector3.up) * body.rotation);
+        yaw = Mathf.Clamp(yaw - appliedYaw, -horizontalLookLimit, horizontalLookLimit);
+        transform.localRotation = initialLocalRotation * Quaternion.Euler(pitch, yaw, 0f);
     }
 
     void OnApplicationFocus(bool hasFocus)

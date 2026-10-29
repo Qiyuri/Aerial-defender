@@ -27,13 +27,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 411367725274379934}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.16031788, y: 0.65526813, z: 0.14514273, w: 0.7237786}
-  m_LocalPosition: {x: -1.082, y: -0.24507141, z: -0.71}
+  m_LocalRotation: {x: 0.18940951, y: 0.8042061, z: 0.10436607, w: 0.5536104}
+  m_LocalPosition: {x: -0.933, y: -0.24507141, z: -0.71}
   m_LocalScale: {x: 0.78183, y: 0.118077226, z: 0.14370567}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8146978911135059460}
-  m_LocalEulerAnglesHint: {x: 2.399, y: 84.841, z: 24.871}
+  m_LocalEulerAnglesHint: {x: 2.399, y: 111.442, z: 24.871}
 --- !u!33 &3174791237255389718
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -911,18 +911,32 @@ MonoBehaviour:
   moveSpeed: 5
   sprintSpeedMultiplier: 1.75
   jumpForce: 7
-  showCharacterCustomizationOnStart: 0
   respawnDebounceSeconds: 1
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  groundCheckDistance: 0.15
   unarmedObject: {fileID: 0}
   sniperWeapon: {fileID: 0}
   bazookaWeapon: {fileID: 0}
+  sniperAimFieldOfView: 8
+  bazookaAimFieldOfView: 28
+  sniperAimSensitivityMultiplier: 0.25
+  bazookaAimSensitivityMultiplier: 0.5
+  sniperMuzzle: {fileID: 0}
   bazookaMuzzle: {fileID: 2240377076360139042}
   bazookaProjectilePrefab: {fileID: 100100000, guid: a2bae04bb80342743acf1cffb4e9feb7, type: 3}
+  weaponMuzzleFlashPrefab: {fileID: 0}
   bazookaProjectileSpeed: 80
   bazookaProjectileLifetime: 8
   bazookaFireInterval: 0.8
   bazookaMuzzleForwardOffset: 0.35
   bazookaDamage: 5
+  bazookaSmokeTrailPrefab: {fileID: 0}
+  bazookaImpactEffectPrefab: {fileID: 0}
+  bazookaTargetSearchDistance: 50
+  bazookaTargetLockAngle: 5
+  bazookaTargetTurnSpeed: 180
   sniperProjectileSpeed: 250
   sniperRange: 500
   sniperFireInterval: 0.6
@@ -1044,13 +1058,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3996848248464224854}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.15004146, y: 0.7404084, z: 0.17602706, w: 0.6311081}
-  m_LocalPosition: {x: 0.039, y: -0.23806763, z: -0.751}
+  m_LocalRotation: {x: 0.11199749, y: 0.5999574, z: 0.20237237, w: 0.7658676}
+  m_LocalPosition: {x: -0.112, y: -0.23806763, z: -0.751}
   m_LocalScale: {x: 0.69302, y: 0.11807726, z: 0.14370568}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8146978911135059460}
-  m_LocalEulerAnglesHint: {x: -4.087, y: 98.152, z: 26.455}
+  m_LocalEulerAnglesHint: {x: -4.087, y: 75.187, z: 26.455}
 --- !u!33 &5193497575739412817
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -1649,11 +1663,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraController
   mouseSensitivity: 2
+  controllerLookSensitivity: 180
+  controllerLookDeadzone: 0.15
   verticalLookLimit: 50
   horizontalLookLimit: 90
   bodyTurnSpeed: 240
   aimFieldOfView: 30
   fovTransitionSpeed: 15
+  showCrosshair: 1
+  crosshairLineLength: 18
+  crosshairGap: 5
+  crosshairThickness: 2
+  movementCameraLeanAngle: 5
+  movementCameraLeanSpeedMultiplier: 1
+  movementCameraReturnDuration: 0.5
+  movementCameraLeanInputThreshold: 0.8
+  showAircraftRadar: 1
+  radarRefreshInterval: 0.25
+  radarRedDistance: 100
+  radarGreenDistance: 1000
+  radarMarkerSize: 16
 --- !u!1 &7065629422484841537
 GameObject:
   m_ObjectHideFlags: 0

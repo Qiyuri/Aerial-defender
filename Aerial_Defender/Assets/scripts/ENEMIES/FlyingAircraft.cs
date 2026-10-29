@@ -4,6 +4,7 @@ using UnityEngine;
 public class FlyingAircraft : MonoBehaviour
 {
     private static Material sharedHitEffectMaterial;
+    private const string TowerHitpointObjectName = "towerhitpoint";
 
     // --- Instellingen voor Unity Inspector (Rechtskantvenster) ---
     
@@ -68,6 +69,7 @@ public class FlyingAircraft : MonoBehaviour
     private float speedMultiplier = 1f;
     private bool isFalling;
     private bool despawnScheduled;
+    private bool hasDamagedTower;
     private bool hitEffectCoroutineRunning;
     private int hitEffectPointMask;
     private bool healthInitialized;
@@ -76,6 +78,9 @@ public class FlyingAircraft : MonoBehaviour
 
     public bool IsVisibleOnRadar => isActiveAndEnabled && currentHitPoints > 0f;
     public bool IsDefeated => !isActiveAndEnabled || (healthInitialized && currentHitPoints <= 0f);
+    public float HealthFraction => healthInitialized && hitPoints > 0f
+        ? Mathf.Clamp01(currentHitPoints / hitPoints)
+        : 0f;
 
     void Start()
     {
@@ -113,6 +118,13 @@ public class FlyingAircraft : MonoBehaviour
     {
         if (hasWaveTargetOverride) return;
 
+        Transform towerHitpoint = FindTowerHitpointTarget();
+        if (towerHitpoint != null)
+        {
+            target = towerHitpoint.gameObject;
+            return;
+        }
+
         int validTargetCount = 0;
         if (targets != null)
         {
@@ -140,6 +152,12 @@ public class FlyingAircraft : MonoBehaviour
 
             selectedIndex--;
         }
+    }
+
+    public static Transform FindTowerHitpointTarget()
+    {
+        GameObject towerHitpoint = GameObject.Find(TowerHitpointObjectName);
+        return towerHitpoint != null ? towerHitpoint.transform : null;
     }
 
     private void SetupEngineSound()
@@ -400,9 +418,24 @@ public class FlyingAircraft : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (!isFalling || despawnScheduled) return;
-        if (collision.collider != null && collision.collider.GetComponentInParent<BazookaProjectile>() != null) return;
+        if (collision.collider == null || despawnScheduled) return;
+        if (collision.collider.GetComponentInParent<BazookaProjectile>() != null) return;
 
+        TowerHealth towerHealth = collision.collider.GetComponentInParent<TowerHealth>();
+        if (towerHealth != null)
+        {
+            if (hasDamagedTower) return;
+
+            hasDamagedTower = true;
+            towerHealth.TakeAircraftImpact(HealthFraction);
+            currentHitPoints = 0f;
+            StartFalling();
+            despawnScheduled = true;
+            Destroy(gameObject, despawnDelayAfterImpact);
+            return;
+        }
+
+        if (!isFalling) return;
         despawnScheduled = true;
         Destroy(gameObject, despawnDelayAfterImpact);
     }

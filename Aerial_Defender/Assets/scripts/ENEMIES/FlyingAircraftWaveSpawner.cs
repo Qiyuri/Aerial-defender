@@ -36,9 +36,22 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
             return;
         }
 
-        if (target == null)
+        if (aircraftPrefab.gameObject.scene.IsValid())
         {
-            Debug.LogError("Assign a target transform to the wave spawner.", this);
+            Debug.LogError("The wave spawner's aircraft prefab must reference the prefab asset, not a scene aircraft instance.", this);
+            enabled = false;
+            return;
+        }
+
+        Transform towerHitpoint = FlyingAircraft.FindTowerHitpointTarget();
+        if (towerHitpoint != null)
+        {
+            target = towerHitpoint;
+        }
+
+        if (target == null || target.name != "towerhitpoint")
+        {
+            Debug.LogError("The wave spawner needs the scene instance of the 'towerhitpoint' prefab as its target.", this);
             enabled = false;
             return;
         }
@@ -56,7 +69,8 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
 
     private IEnumerator SpawnWaves()
     {
-        while (characterCustomization != null && characterCustomization.IsCustomizing)
+        while (LocalMultiplayerManager.IsCustomizationFlowActive
+            || (characterCustomization != null && characterCustomization.IsCustomizing))
         {
             yield return null;
         }
@@ -153,7 +167,12 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
             statusColor = Color.white;
         }
 
-        Rect backgroundRect = new Rect(Screen.width * 0.5f - 190f, 12f, 380f, 88f);
+        float panelWidth = Mathf.Min(380f, Screen.width - 32f);
+        float panelX = LocalMultiplayerManager.SelectedPlayerCount > 1
+            ? Screen.width * 0.5f + 16f
+            : (Screen.width - panelWidth) * 0.5f;
+        panelX = Mathf.Min(panelX, Screen.width - panelWidth - 16f);
+        Rect backgroundRect = new Rect(panelX, 12f, panelWidth, 88f);
         Color previousColor = GUI.color;
         GUI.color = new Color(0f, 0f, 0f, 0.6f);
         GUI.DrawTexture(backgroundRect, Texture2D.whiteTexture);

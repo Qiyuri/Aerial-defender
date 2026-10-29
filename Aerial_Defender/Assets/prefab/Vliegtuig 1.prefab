@@ -168,11 +168,13 @@ MonoBehaviour:
   bobHeight: 4
   weaveWidth: 6
   targets: []
-  target: {fileID: 6891346038426727615, guid: c02bbfa8bc48f7542ab2eb52a69d9a5f, type: 3}
+  target: {fileID: 3738861226849607623, guid: 60335add0309eef47b9cdf5d4f819b10, type: 3}
   straightFlightDistance: 50
   intensityStartDistance: 500
   maxMovementMultiplier: 2.5
   straightenTransitionDistance: 10
+  weaveLeanAngle: 15
+  weaveLeanResponse: 6
   hitPoints: 5
   firstHitSpeedMultiplier: 0.65
   fallingRotationSpeed: 45
@@ -183,6 +185,7 @@ MonoBehaviour:
   secondHitEffectTransform: {fileID: 8366089736865639044}
   firstHitEffectLocalPosition: {x: -2, y: 0, z: 0}
   secondHitEffectLocalPosition: {x: 2, y: 0, z: 0}
+  hitEffectSpawnInterval: 0.5
   engineSound: {fileID: 0}
   engineAudio: {fileID: 0}
   pitchAtTarget: 0.6

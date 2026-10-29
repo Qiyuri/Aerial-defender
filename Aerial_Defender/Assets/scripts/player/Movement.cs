@@ -9,7 +9,6 @@ public class Movement : MonoBehaviour
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float sprintSpeedMultiplier = 1.75f;
     [SerializeField] private float jumpForce = 7f;
-    [SerializeField] private bool showCharacterCustomizationOnStart;
     [SerializeField, Min(0f)] private float respawnDebounceSeconds = 1f;
 
     [Header("Ground check")]
@@ -37,6 +36,10 @@ public class Movement : MonoBehaviour
     [SerializeField] private float bazookaDamage = 5f;
     [SerializeField] private ParticleSystem bazookaSmokeTrailPrefab;
     [SerializeField] private ParticleSystem bazookaImpactEffectPrefab;
+    [Header("Bazooka auto lock")]
+    [SerializeField, Min(0f)] private float bazookaTargetSearchDistance = 50f;
+    [SerializeField, Range(0f, 45f)] private float bazookaTargetLockAngle = 5f;
+    [SerializeField, Min(0f)] private float bazookaTargetTurnSpeed = 180f;
     [SerializeField] private float sniperProjectileSpeed = 250f;
     [SerializeField] private float sniperRange = 500f;
     [SerializeField] private float sniperFireInterval = 0.6f;
@@ -54,8 +57,25 @@ public class Movement : MonoBehaviour
     private int selectedWeaponSlot;
     private float nextFireTime;
     private float nextAllowedRespawnTime;
+    private Gamepad assignedGamepad;
+    private bool hasAssignedGamepad;
+    private int playerIndex;
     private readonly RaycastHit[] groundHits = new RaycastHit[16];
     private readonly RaycastHit[] sniperHits = new RaycastHit[32];
+
+    public int PlayerIndex => playerIndex;
+    public Gamepad InputGamepad => hasAssignedGamepad ? assignedGamepad : Gamepad.current;
+
+    public void SetPlayerInput(int index, Gamepad gamepad)
+    {
+        playerIndex = index;
+        assignedGamepad = gamepad;
+        hasAssignedGamepad = true;
+        if (cameraController != null)
+        {
+            cameraController.SetPlayerInput(index, gamepad);
+        }
+    }
 
     private void Awake()
     {
@@ -65,6 +85,10 @@ public class Movement : MonoBehaviour
         spawnRotation = rb.rotation;
         rb.freezeRotation = true;
         cameraController = GetComponentInChildren<CameraController>();
+        if (cameraController != null && hasAssignedGamepad)
+        {
+            cameraController.SetPlayerInput(playerIndex, assignedGamepad);
+        }
         if (unarmedObject == null)
         {
             unarmedObject = FindChildGameObject("Unarmed", false);
@@ -87,10 +111,6 @@ public class Movement : MonoBehaviour
         }
         SelectWeaponSlot(0);
 
-        if (showCharacterCustomizationOnStart)
-        {
-            gameObject.AddComponent<CharacterCustomization>();
-        }
     }
 
     private void Update()
@@ -98,41 +118,42 @@ public class Movement : MonoBehaviour
         HandleWeaponSelection();
         HandleWeaponFiring();
 
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard == null)
-        {
-            moveInput = Vector2.zero;
-            isSprinting = false;
-            if (cameraController != null) cameraController.SetMovementLean(0f, false);
-            return;
-        }
-
-        isSprinting = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
+        Keyboard keyboard = playerIndex == 0 ? Keyboard.current : null;
+        Gamepad gamepad = InputGamepad;
         moveInput = Vector2.zero;
-        if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed)
+        if (keyboard != null && (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed))
         {
             moveInput.y += 1f;
         }
-        if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed)
+        if (keyboard != null && (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed))
         {
             moveInput.y -= 1f;
         }
-        if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed)
+        if (keyboard != null && (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed))
         {
             moveInput.x += 1f;
         }
-        if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed)
+        if (keyboard != null && (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed))
         {
             moveInput.x -= 1f;
         }
 
+        if (gamepad != null)
+        {
+            moveInput += gamepad.leftStick.ReadValue();
+        }
+
         moveInput = Vector2.ClampMagnitude(moveInput, 1f);
+        isSprinting = (keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed))
+            || (gamepad != null && gamepad.leftStickButton.isPressed && moveInput.sqrMagnitude > 0.001f);
+
         if (cameraController != null)
         {
             cameraController.SetMovementLean(moveInput.x, selectedWeaponSlot != 0);
         }
 
-        if (keyboard.spaceKey.wasPressedThisFrame)
+        if ((keyboard != null && keyboard.spaceKey.wasPressedThisFrame)
+            || (gamepad != null && gamepad.buttonSouth.wasPressedThisFrame))
         {
             jumpRequested = true;
         }
@@ -140,8 +161,11 @@ public class Movement : MonoBehaviour
 
     private void HandleWeaponFiring()
     {
-        Mouse mouse = Mouse.current;
-        if (mouse == null || !mouse.leftButton.wasPressedThisFrame || Time.time < nextFireTime) return;
+        Mouse mouse = playerIndex == 0 ? Mouse.current : null;
+        Gamepad gamepad = InputGamepad;
+        bool mouseFired = mouse != null && mouse.leftButton.wasPressedThisFrame;
+        bool controllerFired = gamepad != null && gamepad.rightTrigger.isPressed;
+        if ((!mouseFired && !controllerFired) || Time.time < nextFireTime) return;
         if (cameraController == null) return;
 
         if (selectedWeaponSlot == 1)
@@ -254,7 +278,10 @@ public class Movement : MonoBehaviour
             GetComponentsInChildren<Collider>(),
             bazookaDamage,
             bazookaSmokeTrailPrefab,
-            bazookaImpactEffectPrefab);
+            bazookaImpactEffectPrefab,
+            bazookaTargetSearchDistance,
+            bazookaTargetLockAngle,
+            bazookaTargetTurnSpeed);
         SpawnWeaponMuzzleFlash(spawnPosition, direction);
     }
 
@@ -380,7 +407,18 @@ public class Movement : MonoBehaviour
 
     private void HandleWeaponSelection()
     {
-        Mouse mouse = Mouse.current;
+        Mouse mouse = playerIndex == 0 ? Mouse.current : null;
+        Gamepad gamepad = InputGamepad;
+
+        if (gamepad != null && gamepad.rightShoulder.wasPressedThisFrame)
+        {
+            SelectWeaponSlot((selectedWeaponSlot + 1) % 3);
+        }
+        else if (gamepad != null && gamepad.leftShoulder.wasPressedThisFrame)
+        {
+            SelectWeaponSlot((selectedWeaponSlot + 2) % 3);
+        }
+
         if (mouse == null) return;
 
         float scroll = mouse.scroll.ReadValue().y;

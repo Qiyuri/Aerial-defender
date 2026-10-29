@@ -163,11 +163,13 @@ MonoBehaviour:
   bobHeight: 4
   weaveWidth: 6
   targets: []
-  target: {fileID: 0}
+  target: {fileID: 3738861226849607623, guid: 60335add0309eef47b9cdf5d4f819b10, type: 3}
   straightFlightDistance: 50
   intensityStartDistance: 500
   maxMovementMultiplier: 2.5
   straightenTransitionDistance: 10
+  weaveLeanAngle: 15
+  weaveLeanResponse: 6
   hitPoints: 5
   firstHitSpeedMultiplier: 0.327
   fallingRotationSpeed: 45

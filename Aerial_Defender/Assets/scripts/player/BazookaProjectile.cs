@@ -5,14 +5,13 @@ public class BazookaProjectile : MonoBehaviour
 {
     private static Material sharedParticleMaterial;
 
-    [SerializeField, Min(0f)] private float targetSearchDistance = 50f;
-    [SerializeField, Range(0f, 45f)] private float targetLockAngle = 5f;
-    [SerializeField, Min(0f)] private float targetTurnSpeed = 180f;
-
     private Rigidbody projectileBody;
     private Collider projectileCollider;
     private float damage = 5f;
     private float projectileSpeed;
+    private float targetSearchDistance;
+    private float targetLockAngle;
+    private float targetTurnSpeed;
     private Vector3 travelDirection;
     private bool hasHit;
     private ParticleSystem smokeTrail;
@@ -172,12 +171,18 @@ public class BazookaProjectile : MonoBehaviour
         Collider[] ownerColliders,
         float projectileDamage,
         ParticleSystem smokeTrailPrefab,
-        ParticleSystem impactEffect)
+        ParticleSystem impactEffect,
+        float targetSearchDistance,
+        float targetLockAngle,
+        float targetTurnSpeed)
     {
         damage = projectileDamage;
         travelDirection = direction.normalized;
         projectileSpeed = Mathf.Max(0f, speed);
         impactEffectPrefab = impactEffect;
+        this.targetSearchDistance = Mathf.Max(0f, targetSearchDistance);
+        this.targetLockAngle = Mathf.Clamp(targetLockAngle, 0f, 45f);
+        this.targetTurnSpeed = Mathf.Max(0f, targetTurnSpeed);
         this.ownerColliders = ownerColliders;
         projectileBody.linearVelocity = travelDirection * projectileSpeed;
 

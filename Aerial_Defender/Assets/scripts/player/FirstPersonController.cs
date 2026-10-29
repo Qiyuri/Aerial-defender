@@ -1,10 +1,13 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
 public class CameraController : MonoBehaviour
 {
     [Header("Look")]
     [SerializeField] private float mouseSensitivity = 2f;
+    [SerializeField, Min(0f)] private float controllerLookSensitivity = 180f;
+    [SerializeField, Range(0f, 0.95f)] private float controllerLookDeadzone = 0.15f;
     [SerializeField] private float verticalLookLimit = 50f;
     [SerializeField] private float horizontalLookLimit = 90f;
     [SerializeField] private float bodyTurnSpeed = 240f;
@@ -21,7 +24,9 @@ public class CameraController : MonoBehaviour
 
     [Header("Movement camera lean")]
     [SerializeField, Min(0f)] private float movementCameraLeanAngle = 5f;
+    [SerializeField, Min(0.01f)] private float movementCameraLeanSpeedMultiplier = 1f;
     [SerializeField, Min(0.01f)] private float movementCameraReturnDuration = 0.5f;
+    [SerializeField, Range(0.1f, 1f)] private float movementCameraLeanInputThreshold = 0.8f;
 
     [Header("Aircraft radar")]
     [SerializeField] private bool showAircraftRadar = true;
@@ -57,10 +62,20 @@ public class CameraController : MonoBehaviour
     private float defaultFieldOfView;
     private float defaultAimFieldOfView;
     private float aimSensitivityMultiplier = 1f;
+    private Gamepad assignedGamepad;
+    private bool hasAssignedGamepad;
+    private int playerIndex;
 
     void Awake()
     {
         defaultAimFieldOfView = aimFieldOfView;
+    }
+
+    public void SetPlayerInput(int index, Gamepad gamepad)
+    {
+        playerIndex = index;
+        assignedGamepad = gamepad;
+        hasAssignedGamepad = true;
     }
 
     void Start()
@@ -87,28 +102,38 @@ public class CameraController : MonoBehaviour
             RefreshRadarTargets();
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        Gamepad gamepad = hasAssignedGamepad ? assignedGamepad : Gamepad.current;
+        if ((playerIndex == 0 && Input.GetKeyDown(KeyCode.Escape))
+            || (gamepad != null && gamepad.startButton.wasPressedThisFrame))
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             return;
         }
 
-        if (Cursor.lockState != CursorLockMode.Locked && Input.GetMouseButtonDown(0))
+        if (playerIndex == 0 && Cursor.lockState != CursorLockMode.Locked && Input.GetMouseButtonDown(0))
         {
             LockCursor();
         }
 
-        float currentSensitivity = mouseSensitivity
-            * (Input.GetMouseButton(1) ? aimSensitivityMultiplier : 1f);
-        float mouseX = Input.GetAxis("Mouse X") * currentSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * currentSensitivity;
+        bool isAiming = (playerIndex == 0 && Input.GetMouseButton(1))
+            || (gamepad != null && gamepad.leftTrigger.ReadValue() > 0.1f);
+        float aimSensitivity = isAiming ? aimSensitivityMultiplier : 1f;
+        Vector2 mouseLook = playerIndex == 0
+            ? new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * mouseSensitivity
+            : Vector2.zero;
+        Vector2 controllerLook = gamepad != null
+            ? ApplyLookDeadzone(gamepad.rightStick.ReadValue(), controllerLookDeadzone)
+                * controllerLookSensitivity
+                * Time.deltaTime
+            : Vector2.zero;
 
-        yaw = Mathf.Clamp(yaw + mouseX, -horizontalLookLimit, horizontalLookLimit);
-        pitch = Mathf.Clamp(pitch - mouseY, -verticalLookLimit, verticalLookLimit);
+        Vector2 lookInput = (mouseLook + controllerLook) * aimSensitivity;
+        yaw = Mathf.Clamp(yaw + lookInput.x, -horizontalLookLimit, horizontalLookLimit);
+        pitch = Mathf.Clamp(pitch - lookInput.y, -verticalLookLimit, verticalLookLimit);
         transform.localRotation = initialLocalRotation * Quaternion.Euler(pitch, yaw, 0f);
 
-        float targetFieldOfView = Input.GetMouseButton(1)
+        float targetFieldOfView = isAiming
             ? aimFieldOfView
             : defaultFieldOfView;
         float interpolation = 1f - Mathf.Exp(-fovTransitionSpeed * Time.deltaTime);
@@ -119,22 +144,37 @@ public class CameraController : MonoBehaviour
         UpdateMovementCameraRoll();
     }
 
+    private static Vector2 ApplyLookDeadzone(Vector2 input, float deadzone)
+    {
+        float magnitude = input.magnitude;
+        if (magnitude <= deadzone) return Vector2.zero;
+
+        float adjustedMagnitude = Mathf.InverseLerp(deadzone, 1f, magnitude);
+        return input.normalized * adjustedMagnitude;
+    }
+
     private void OnGUI()
     {
         if (Cursor.lockState != CursorLockMode.Locked) return;
 
+        Rect viewport = GetViewportRect();
+        GUI.BeginGroup(viewport);
         if (showAircraftRadar)
         {
-            DrawAircraftRadar();
+            DrawAircraftRadar(viewport.width, viewport.height);
         }
 
-        if (!showCrosshair) return;
+        if (!showCrosshair)
+        {
+            GUI.EndGroup();
+            return;
+        }
 
         Color previousColor = GUI.color;
         GUI.color = Color.white;
 
-        float centerX = Screen.width * 0.5f;
-        float centerY = Screen.height * 0.5f;
+        float centerX = viewport.width * 0.5f;
+        float centerY = viewport.height * 0.5f;
         float halfLength = crosshairLineLength * 0.5f;
         GUI.DrawTexture(new Rect(
             centerX - crosshairThickness * 0.5f,
@@ -158,6 +198,18 @@ public class CameraController : MonoBehaviour
             crosshairThickness), Texture2D.whiteTexture);
 
         GUI.color = previousColor;
+        GUI.EndGroup();
+    }
+
+    private Rect GetViewportRect()
+    {
+        if (playerCamera == null) return new Rect(0f, 0f, Screen.width, Screen.height);
+        Rect cameraRect = playerCamera.rect;
+        return new Rect(
+            cameraRect.x * Screen.width,
+            (1f - cameraRect.y - cameraRect.height) * Screen.height,
+            cameraRect.width * Screen.width,
+            cameraRect.height * Screen.height);
     }
 
     private void RefreshRadarTargets()
@@ -192,16 +244,16 @@ public class CameraController : MonoBehaviour
         }
     }
 
-    private void DrawAircraftRadar()
+    private void DrawAircraftRadar(float viewportWidth, float viewportHeight)
     {
         EnsureRadarTextures();
 
         Matrix4x4 previousMatrix = GUI.matrix;
         Color previousColor = GUI.color;
-        float radarSize = Mathf.Clamp(Mathf.Min((Screen.width - 60f) * 0.32f, Screen.height * 0.38f), 150f, 260f);
+        float radarSize = Mathf.Clamp(Mathf.Min((viewportWidth - 60f) * 0.32f, viewportHeight * 0.38f), 150f, 260f);
         float panelWidth = radarSize + 28f;
         float panelHeight = radarSize + 58f;
-        float panelX = Screen.width - panelWidth - 16f;
+        float panelX = viewportWidth - panelWidth - 16f;
         const float panelY = 12f;
         Rect panelRect = new Rect(panelX, panelY, panelWidth, panelHeight);
         Rect radarRect = new Rect(
@@ -386,7 +438,7 @@ public class CameraController : MonoBehaviour
 
     public void SetMovementLean(float horizontalInput, bool allowLean)
     {
-        int direction = allowLean && Mathf.Abs(horizontalInput) > 0.001f
+        int direction = allowLean && Mathf.Abs(horizontalInput) >= movementCameraLeanInputThreshold
             ? (horizontalInput > 0f ? 1 : -1)
             : 0;
         if (direction == 0)
@@ -420,8 +472,8 @@ public class CameraController : MonoBehaviour
         if (isTransitioningMovementCameraRoll)
         {
             movementCameraTransitionElapsed += Time.deltaTime;
-            float recoveryProgress = Mathf.Clamp01(
-                movementCameraTransitionElapsed / movementCameraReturnDuration);
+            float transitionDuration = movementCameraReturnDuration / movementCameraLeanSpeedMultiplier;
+            float recoveryProgress = Mathf.Clamp01(movementCameraTransitionElapsed / transitionDuration);
             currentMovementCameraRoll = Mathf.Lerp(
                 movementCameraTransitionStartRoll,
                 movementCameraTransitionTargetRoll,

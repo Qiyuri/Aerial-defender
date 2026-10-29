@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Canvas), typeof(GraphicRaycaster))]
 public class PauseMenu : MonoBehaviour
@@ -26,7 +28,9 @@ public class PauseMenu : MonoBehaviour
 
     private void Update()
     {
-        if (!isPaused && Input.GetKeyDown(KeyCode.Escape))
+        Gamepad gamepad = Gamepad.current;
+        if (!isPaused && (Input.GetKeyDown(KeyCode.Escape)
+            || (gamepad != null && gamepad.startButton.wasPressedThisFrame)))
         {
             OpenPauseMenu();
         }
@@ -49,5 +53,17 @@ public class PauseMenu : MonoBehaviour
         graphicRaycaster.enabled = true;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null) return;
+
+        Selectable[] selectables = pauseCanvas.GetComponentsInChildren<Selectable>(true);
+        foreach (Selectable selectable in selectables)
+        {
+            if (selectable == null || !selectable.gameObject.activeInHierarchy || !selectable.IsInteractable()) continue;
+
+            eventSystem.SetSelectedGameObject(selectable.gameObject);
+            return;
+        }
     }
 }

@@ -75,9 +75,12 @@ public class FlyingAircraft : MonoBehaviour
     private bool healthInitialized;
     private bool hasWaveTargetOverride;
     private float currentWeaveLeanAngle;
+    private float waveSpawnTime;
+    private bool killRewardGranted;
 
     public bool IsVisibleOnRadar => isActiveAndEnabled && currentHitPoints > 0f;
     public bool IsDefeated => !isActiveAndEnabled || (healthInitialized && currentHitPoints <= 0f);
+    public bool IsFalling => isFalling;
     public float HealthFraction => healthInitialized && hitPoints > 0f
         ? Mathf.Clamp01(currentHitPoints / hitPoints)
         : 0f;
@@ -88,6 +91,7 @@ public class FlyingAircraft : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         currentHitPoints = Mathf.Max(0f, hitPoints);
         healthInitialized = true;
+        waveSpawnTime = Time.time;
 
         // Uitzetten zwaartekracht en rotatie-vriest (belangrijk voor vliegtuig)
         if (rb != null)
@@ -111,6 +115,7 @@ public class FlyingAircraft : MonoBehaviour
 
         target = waveTarget.gameObject;
         hasWaveTargetOverride = true;
+        waveSpawnTime = Time.time;
         speed *= Mathf.Max(0f, speedMultiplier);
     }
 
@@ -285,6 +290,7 @@ public class FlyingAircraft : MonoBehaviour
         StartRepeatingHitEffects(1 << Random.Range(0, 2));
         if (currentHitPoints <= 0f)
         {
+            AwardKillReward();
             StartFalling();
             return;
         }
@@ -294,18 +300,36 @@ public class FlyingAircraft : MonoBehaviour
 
     public void TakeBazookaHit(float damage, Vector3 projectileDirection)
     {
+        if (isFalling) return;
+
         if (damage > 0f)
         {
             currentHitPoints = Mathf.Max(0f, currentHitPoints - damage);
         }
 
         StartRepeatingHitEffects(0b11);
+        AwardKillReward();
         StartFalling();
 
         if (rb != null && projectileDirection.sqrMagnitude > 0.0001f)
         {
             rb.AddForce(projectileDirection.normalized * bazookaKnockbackForce, ForceMode.Impulse);
         }
+    }
+
+    private void AwardKillReward()
+    {
+        if (killRewardGranted) return;
+
+        killRewardGranted = true;
+        TowerHealth towerHealth = TowerHealth.Instance;
+        if (towerHealth == null)
+        {
+            Debug.LogError("Cannot award aircraft kill coins because no TowerHealth instance is active.", this);
+            return;
+        }
+
+        towerHealth.RewardAircraftKill(Mathf.Max(0f, Time.time - waveSpawnTime));
     }
 
     private void StartRepeatingHitEffects(int pointMask)
@@ -422,6 +446,7 @@ public class FlyingAircraft : MonoBehaviour
         if (collision.collider.GetComponentInParent<BazookaProjectile>() != null) return;
 
         TowerHealth towerHealth = collision.collider.GetComponentInParent<TowerHealth>();
+        if (towerHealth == null) towerHealth = TowerHealth.Instance;
         if (towerHealth != null)
         {
             if (hasDamagedTower) return;

@@ -10,22 +10,17 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
     [SerializeField, Min(0f)] private float minimumSpawnDistance = 1000f;
     [SerializeField, Min(0f)] private float maximumSpawnDistance = 8000f;
     [SerializeField, Min(0f)] private float maximumHeightDifference = 100f;
-    [SerializeField, Min(0f)] private float timeBetweenWaves = 5f;
 
     [Header("Wave speed")]
     [SerializeField, Range(0f, 1f)] private float firstWaveSpeedMultiplier = 0.5f;
     [SerializeField, Min(0f)] private float speedIncreasePerPairOfWaves = 0.05f;
-    [SerializeField, Min(0f)] private float waveCompleteDisplayDuration = 2f;
 
     private readonly List<FlyingAircraft> currentWaveAircraft = new List<FlyingAircraft>();
     private CharacterCustomization characterCustomization;
+    private GameManager gameManager;
     private GUIStyle waveStatusStyle;
     private int displayedWaveNumber = 1;
-    private int completedWaveNumber;
-    private float incomingSecondsRemaining;
-    private float completedWaveDisplayUntil;
     private bool hasStartedWaves;
-    private bool isWaveIncoming = true;
 
     private void Start()
     {
@@ -63,6 +58,15 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
             return;
         }
 
+        gameManager = GameManager.Instance;
+        if (gameManager == null)
+        {
+            Debug.LogError("The wave shop requires an active GameManager in the scene.", this);
+            enabled = false;
+            return;
+        }
+
+        gameManager.InitializeTowerUpgrades();
         characterCustomization = FindObjectOfType<CharacterCustomization>();
         StartCoroutine(SpawnWaves());
     }
@@ -86,15 +90,6 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
             }
 
             displayedWaveNumber = waveNumber;
-            isWaveIncoming = true;
-            incomingSecondsRemaining = timeBetweenWaves;
-            while (incomingSecondsRemaining > 0f)
-            {
-                yield return new WaitForSecondsRealtime(1f);
-                incomingSecondsRemaining = Mathf.Max(0f, incomingSecondsRemaining - 1f);
-            }
-
-            isWaveIncoming = false;
             int aircraftCount = waveNumber + 1;
             float speedMultiplier = GetSpeedMultiplier(waveNumber);
             currentWaveAircraft.Clear();
@@ -123,8 +118,8 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
                 yield return null;
             }
 
-            completedWaveNumber = waveNumber;
-            completedWaveDisplayUntil = Time.unscaledTime + waveCompleteDisplayDuration;
+            yield return gameManager.WaitForBetweenWaveShop();
+
             waveNumber++;
         }
     }
@@ -144,29 +139,11 @@ public class FlyingAircraftWaveSpawner : MonoBehaviour
             };
         }
 
-        string statusText;
-        Color statusColor;
-        if (isWaveIncoming)
-        {
-            int seconds = Mathf.CeilToInt(incomingSecondsRemaining);
-            string incomingText = $"WAVE {displayedWaveNumber} INCOMING\n{seconds} SECOND{(seconds == 1 ? string.Empty : "S")}";
-            if (Time.unscaledTime < completedWaveDisplayUntil)
-            {
-                statusText = $"WAVE {completedWaveNumber} COMPLETE\n{incomingText}";
-                statusColor = new Color(0.55f, 1f, 0.55f);
-            }
-            else
-            {
-                statusText = incomingText;
-                statusColor = new Color(1f, 0.76f, 0.28f);
-            }
-        }
-        else
-        {
-            statusText = $"WAVE {displayedWaveNumber}";
-            statusColor = Color.white;
-        }
+        DrawWaveStatus($"WAVE {displayedWaveNumber}", Color.white);
+    }
 
+    private void DrawWaveStatus(string statusText, Color statusColor)
+    {
         float panelWidth = Mathf.Min(380f, Screen.width - 32f);
         float panelX = LocalMultiplayerManager.SelectedPlayerCount > 1
             ? Screen.width * 0.5f + 16f

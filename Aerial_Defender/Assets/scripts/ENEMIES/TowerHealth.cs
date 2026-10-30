@@ -4,16 +4,26 @@ using UnityEngine.SceneManagement;
 
 public class TowerHealth : MonoBehaviour
 {
+    public static TowerHealth Instance { get; private set; }
+
     [Header("Tower health")]
     [SerializeField, Min(1f)] private float maximumHealth = 100f;
     [SerializeField, Min(0f)] private float fullHealthAircraftDamage = 50f;
     [SerializeField, Min(0f)] private float halfHealthAircraftDamage = 25f;
     [SerializeField, Min(0f)] private float destroyedAircraftDamage = 10f;
 
+    [Header("Coins")]
+    private int coinsForFastKill = 300;
+    private float fastKillTimeSeconds = 15f;
+    private int coinsLostPerTimeStep = 20;
+    private float killRewardTimeStepSeconds = 5f;
+    private float coinsLostPerTowerHealth = 5f;
+
     [Header("Game over")]
     [SerializeField] private bool showHealthOnScreen = true;
 
     private float currentHealth;
+    private int coins;
     private bool gameOver;
     private bool isLoadingScene;
     private int selectedGameOverOption = 1;
@@ -23,10 +33,25 @@ public class TowerHealth : MonoBehaviour
 
     public float CurrentHealth => currentHealth;
     public float MaximumHealth => maximumHealth;
+    public int Coins => coins;
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogError("Only one TowerHealth instance can manage tower health and coins.", this);
+            enabled = false;
+            return;
+        }
+
+        Instance = this;
         currentHealth = maximumHealth;
+        coins = 0;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
     }
 
     private void Update()
@@ -99,12 +124,53 @@ public class TowerHealth : MonoBehaviour
             damage = Mathf.Lerp(halfHealthAircraftDamage, fullHealthAircraftDamage, (healthFraction - 0.5f) * 2f);
         }
 
+        float healthBeforeImpact = currentHealth;
         currentHealth = Mathf.Max(0f, currentHealth - damage);
+        int coinsToLose = Mathf.CeilToInt((healthBeforeImpact - currentHealth) * coinsLostPerTowerHealth);
+        coins = Mathf.Max(0, coins - coinsToLose);
         if (currentHealth <= 0f)
         {
             gameOver = true;
             Time.timeScale = 0f;
         }
+    }
+
+    public void RewardAircraftKill(float elapsedSeconds)
+    {
+        int timeSteps = killRewardTimeStepSeconds > 0f
+            ? Mathf.Max(0, Mathf.FloorToInt((elapsedSeconds - fastKillTimeSeconds) / killRewardTimeStepSeconds))
+            : 0;
+        int reward = Mathf.Max(0, coinsForFastKill - timeSteps * coinsLostPerTimeStep);
+        coins += reward;
+    }
+
+    public void ConfigureCoinEconomy(
+        int startingCoins,
+        int fastKillReward,
+        float fastKillWindow,
+        int coinLossPerTimeStep,
+        float timeStepSeconds,
+        float coinLossPerTowerHealth)
+    {
+        coins = Mathf.Max(0, startingCoins);
+        coinsForFastKill = Mathf.Max(0, fastKillReward);
+        fastKillTimeSeconds = Mathf.Max(0f, fastKillWindow);
+        coinsLostPerTimeStep = Mathf.Max(0, coinLossPerTimeStep);
+        killRewardTimeStepSeconds = Mathf.Max(0.01f, timeStepSeconds);
+        coinsLostPerTowerHealth = Mathf.Max(0f, coinLossPerTowerHealth);
+    }
+
+    public bool TrySpendCoins(int amount)
+    {
+        if (amount < 0)
+        {
+            Debug.LogError("Cannot spend a negative number of coins.", this);
+            return false;
+        }
+
+        if (coins < amount) return false;
+        coins -= amount;
+        return true;
     }
 
     private void OnGUI()
@@ -131,17 +197,21 @@ public class TowerHealth : MonoBehaviour
         const float left = 20f;
         const float top = 20f;
         const float panelWidth = 280f;
-        const float panelHeight = 76f;
+        const float panelHeight = 96f;
         Rect panelRect = new Rect(left, top, panelWidth, panelHeight);
-        Rect barRect = new Rect(left + 12f, top + 46f, panelWidth - 24f, 16f);
+        Rect barRect = new Rect(left + 12f, top + 72f, panelWidth - 24f, 16f);
 
         Color previousColor = GUI.color;
         GUI.color = new Color(0f, 0f, 0f, 0.75f);
         GUI.DrawTexture(panelRect, Texture2D.whiteTexture);
         GUI.color = Color.white;
         GUI.Label(
-            new Rect(left + 12f, top + 6f, panelWidth - 24f, 34f),
+            new Rect(left + 12f, top + 4f, panelWidth - 24f, 30f),
             $"TOWER HP: {Mathf.CeilToInt(currentHealth)} / {Mathf.CeilToInt(maximumHealth)}",
+            healthStyle);
+        GUI.Label(
+            new Rect(left + 12f, top + 34f, panelWidth - 24f, 30f),
+            $"COINS: {coins}",
             healthStyle);
 
         GUI.color = new Color(0.18f, 0.18f, 0.18f, 1f);

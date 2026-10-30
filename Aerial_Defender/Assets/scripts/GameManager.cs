@@ -26,6 +26,7 @@ public class GameManager : MonoBehaviour
     }
 
     public static GameManager Instance { get; private set; }
+    public static bool IsBetweenWaveShopOpen { get; private set; }
     private static Material tracerMaterial;
 
     [Header("Character materials")]
@@ -79,11 +80,16 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
+        IsBetweenWaveShopOpen = false;
     }
 
     private void OnDestroy()
     {
-        if (Instance == this) Instance = null;
+        if (Instance == this)
+        {
+            Instance = null;
+            IsBetweenWaveShopOpen = false;
+        }
     }
 
     public void InitializeTowerUpgrades()
@@ -198,6 +204,7 @@ public class GameManager : MonoBehaviour
 
         selectedShopOption = 0;
         isBetweenWaveShopOpen = true;
+        IsBetweenWaveShopOpen = true;
         float previousTimeScale = Time.timeScale;
         previousCursorLockMode = Cursor.lockState;
         previousCursorVisibility = Cursor.visible;
@@ -205,6 +212,7 @@ public class GameManager : MonoBehaviour
         Cursor.visible = true;
         Time.timeScale = 0f;
         while (isBetweenWaveShopOpen) yield return null;
+        IsBetweenWaveShopOpen = false;
         Time.timeScale = previousTimeScale;
         Cursor.lockState = previousCursorLockMode;
         Cursor.visible = previousCursorVisibility;
@@ -516,6 +524,7 @@ public class GameManager : MonoBehaviour
         else
         {
             isBetweenWaveShopOpen = false;
+            IsBetweenWaveShopOpen = false;
         }
     }
 
@@ -598,6 +607,7 @@ public class GameManager : MonoBehaviour
             shopButtonStyle))
         {
             isBetweenWaveShopOpen = false;
+            IsBetweenWaveShopOpen = false;
         }
 
         GUI.backgroundColor = previousBackgroundColor;

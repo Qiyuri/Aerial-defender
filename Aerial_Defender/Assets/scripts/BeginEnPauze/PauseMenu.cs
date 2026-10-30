@@ -11,6 +11,7 @@ public class PauseMenu : MonoBehaviour
     private RectTransform canvasTransform;
     private float previousTimeScale;
     private bool isPaused;
+    public static bool IsPaused { get; private set; }
 
     private void Awake()
     {
@@ -22,6 +23,7 @@ public class PauseMenu : MonoBehaviour
     private void Start()
     {
         previousTimeScale = Time.timeScale;
+        IsPaused = false;
         pauseCanvas.enabled = false;
         graphicRaycaster.enabled = false;
     }
@@ -29,6 +31,13 @@ public class PauseMenu : MonoBehaviour
     private void Update()
     {
         Gamepad gamepad = Gamepad.current;
+        if (isPaused && (Input.GetKeyDown(KeyCode.Escape)
+            || (gamepad != null && gamepad.startButton.wasPressedThisFrame)))
+        {
+            ResumeGame();
+            return;
+        }
+
         if (!isPaused && (Input.GetKeyDown(KeyCode.Escape)
             || (gamepad != null && gamepad.startButton.wasPressedThisFrame)))
         {
@@ -41,12 +50,16 @@ public class PauseMenu : MonoBehaviour
         if (isPaused)
         {
             Time.timeScale = previousTimeScale;
+            IsPaused = false;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
     }
 
     private void OpenPauseMenu()
     {
         isPaused = true;
+        IsPaused = true;
         Time.timeScale = 0f;
         canvasTransform.localScale = Vector3.one;
         pauseCanvas.enabled = true;
@@ -65,5 +78,21 @@ public class PauseMenu : MonoBehaviour
             eventSystem.SetSelectedGameObject(selectable.gameObject);
             return;
         }
+    }
+
+    public void ResumeGame()
+    {
+        if (!isPaused) return;
+
+        isPaused = false;
+        IsPaused = false;
+        pauseCanvas.enabled = false;
+        graphicRaycaster.enabled = false;
+        Time.timeScale = previousTimeScale;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem != null) eventSystem.SetSelectedGameObject(null);
     }
 }

@@ -111,7 +111,10 @@ public class CameraController : MonoBehaviour
             return;
         }
 
-        if (playerIndex == 0 && Cursor.lockState != CursorLockMode.Locked && Input.GetMouseButtonDown(0))
+        if (playerIndex == 0
+            && !IsCursorOwnedByMenu()
+            && Cursor.lockState != CursorLockMode.Locked
+            && Input.GetMouseButtonDown(0))
         {
             LockCursor();
         }
@@ -546,7 +549,7 @@ public class CameraController : MonoBehaviour
 
     void OnApplicationFocus(bool hasFocus)
     {
-        if (hasFocus && enabled) LockCursor();
+        if (hasFocus && enabled && !IsCursorOwnedByMenu()) LockCursor();
     }
 
     void OnDisable()
@@ -559,5 +562,12 @@ public class CameraController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+    }
+
+    private static bool IsCursorOwnedByMenu()
+    {
+        return TowerHealth.IsGameOverActive
+            || PauseMenu.IsPaused
+            || GameManager.IsBetweenWaveShopOpen;
     }
 }

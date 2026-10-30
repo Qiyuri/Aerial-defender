@@ -31,6 +31,7 @@ public class TowerHealth : MonoBehaviour
     private GUIStyle gameOverStyle;
     private GUIStyle gameOverButtonStyle;
 
+    public static bool IsGameOverActive { get; private set; }
     public float CurrentHealth => currentHealth;
     public float MaximumHealth => maximumHealth;
     public int Coins => coins;
@@ -45,13 +46,18 @@ public class TowerHealth : MonoBehaviour
         }
 
         Instance = this;
+        IsGameOverActive = false;
         currentHealth = maximumHealth;
         coins = 0;
     }
 
     private void OnDestroy()
     {
-        if (Instance == this) Instance = null;
+        if (Instance == this)
+        {
+            Instance = null;
+            IsGameOverActive = false;
+        }
     }
 
     private void Update()
@@ -131,7 +137,10 @@ public class TowerHealth : MonoBehaviour
         if (currentHealth <= 0f)
         {
             gameOver = true;
+            IsGameOverActive = true;
             Time.timeScale = 0f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
     }
 
@@ -307,6 +316,7 @@ public class TowerHealth : MonoBehaviour
     {
         if (isLoadingScene) return;
         isLoadingScene = true;
+        LockCursorForSceneTransition();
         Time.timeScale = 1f;
         SceneManager.LoadScene(0);
     }
@@ -316,7 +326,14 @@ public class TowerHealth : MonoBehaviour
         if (isLoadingScene) return;
         isLoadingScene = true;
         LocalMultiplayerManager.RequestRestartWithSavedAppearance();
+        LockCursorForSceneTransition();
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    private static void LockCursorForSceneTransition()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 }

@@ -394,6 +394,63 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 5795910447984551536, guid: 1b34b2494080b6c4e9609e746bac9faf, type: 3}
   m_PrefabInstance: {fileID: 8066778832677878730}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1180792266330610760
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1354354844593611533, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_Name
+      value: Turret
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -6.9651694
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 80.00007
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.21215278
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1837594141163567543, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 22a66dae660ca064ba864715e85fa26f, type: 3}
 --- !u!1001 &3224342157035859699
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -521,10 +578,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraController
   mouseSensitivity: 2
+  controllerLookSensitivity: 180
+  controllerLookDeadzone: 0.15
   verticalLookLimit: 50
   horizontalLookLimit: 90
+  bodyTurnSpeed: 240
   aimFieldOfView: 30
   fovTransitionSpeed: 15
+  showCrosshair: 1
+  crosshairLineLength: 18
+  crosshairGap: 5
+  crosshairThickness: 2
+  movementCameraLeanAngle: 5
+  movementCameraLeanSpeedMultiplier: 1
+  movementCameraReturnDuration: 0.5
+  movementCameraLeanInputThreshold: 0.8
+  showAircraftRadar: 1
+  radarRefreshInterval: 0.25
+  radarRedDistance: 100
+  radarGreenDistance: 1000
+  radarMarkerSize: 16
 --- !u!1001 &8066778832677878730
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -603,3 +676,4 @@ SceneRoots:
   - {fileID: 3224342157035859699}
   - {fileID: 811115470840787053}
   - {fileID: 4881322030182633575}
+  - {fileID: 1180792266330610760}

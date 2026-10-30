@@ -34,6 +34,7 @@ public class Movement : MonoBehaviour
     [SerializeField] private float bazookaFireInterval = 0.8f;
     [SerializeField] private float bazookaMuzzleForwardOffset = 0.35f;
     [SerializeField] private float bazookaDamage = 5f;
+    [SerializeField, Min(0f)] private float initialHitboxIgnoreDistance = 10f;
     [SerializeField] private ParticleSystem bazookaSmokeTrailPrefab;
     [SerializeField] private ParticleSystem bazookaImpactEffectPrefab;
     [Header("Bazooka auto lock")]
@@ -223,6 +224,7 @@ public class Movement : MonoBehaviour
             for (int i = 0; i < hitCount; i++)
             {
                 RaycastHit candidate = sniperHits[i];
+                if (distanceTravelled + candidate.distance < initialHitboxIgnoreDistance) continue;
                 if (IsPlayerCollider(candidate.collider)) continue;
                 if (hitTarget && candidate.distance >= nearestHit.distance) continue;
 
@@ -281,7 +283,8 @@ public class Movement : MonoBehaviour
             bazookaImpactEffectPrefab,
             bazookaTargetSearchDistance,
             bazookaTargetLockAngle,
-            bazookaTargetTurnSpeed);
+            bazookaTargetTurnSpeed,
+            initialHitboxIgnoreDistance);
         SpawnWeaponMuzzleFlash(spawnPosition, direction);
     }
 
@@ -299,6 +302,7 @@ public class Movement : MonoBehaviour
         for (int i = 0; i < hitCount; i++)
         {
             RaycastHit candidate = sniperHits[i];
+            if (candidate.distance < initialHitboxIgnoreDistance) continue;
             if (IsPlayerCollider(candidate.collider)) continue;
             if (hitTarget && candidate.distance >= nearestHit.distance) continue;
 
@@ -492,22 +496,19 @@ public class Movement : MonoBehaviour
     {
         isGrounded = CheckGrounded();
 
-        if (isGrounded && moveInput.sqrMagnitude > 0.001f && cameraController != null)
+        if (moveInput.sqrMagnitude > 0.001f && cameraController != null)
         {
             cameraController.AlignBodyToLookDirection(rb, Time.fixedDeltaTime);
         }
 
         Vector3 velocity = rb.linearVelocity;
-        if (isGrounded)
-        {
-            Vector3 movement = cameraController != null
-                ? cameraController.GetLookRelativeMovement(moveInput)
-                : transform.right * moveInput.x + transform.forward * moveInput.y;
-            movement = Vector3.ClampMagnitude(movement, 1f);
-            float currentMoveSpeed = moveSpeed * (isSprinting ? sprintSpeedMultiplier : 1f);
-            velocity.x = movement.x * currentMoveSpeed;
-            velocity.z = movement.z * currentMoveSpeed;
-        }
+        Vector3 movement = cameraController != null
+            ? cameraController.GetLookRelativeMovement(moveInput)
+            : transform.right * moveInput.x + transform.forward * moveInput.y;
+        movement = Vector3.ClampMagnitude(movement, 1f);
+        float currentMoveSpeed = moveSpeed * (isSprinting ? sprintSpeedMultiplier : 1f);
+        velocity.x = movement.x * currentMoveSpeed;
+        velocity.z = movement.z * currentMoveSpeed;
 
         if (jumpRequested && isGrounded)
         {

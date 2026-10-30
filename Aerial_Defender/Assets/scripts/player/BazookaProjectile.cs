@@ -12,7 +12,10 @@ public class BazookaProjectile : MonoBehaviour
     private float targetSearchDistance;
     private float targetLockAngle;
     private float targetTurnSpeed;
+    private float initialHitboxIgnoreDistance;
     private Vector3 travelDirection;
+    private Vector3 launchPosition;
+    private float distanceTravelled;
     private bool hasHit;
     private ParticleSystem smokeTrail;
     private ParticleSystem impactEffectPrefab;
@@ -42,6 +45,7 @@ public class BazookaProjectile : MonoBehaviour
     {
         if (!hasHit && projectileSpeed > 0f)
         {
+            projectileCollider.isTrigger = distanceTravelled < initialHitboxIgnoreDistance;
             UpdateTargetLock();
             float travelDistance = projectileSpeed * Time.fixedDeltaTime;
             float sweepRadius = Mathf.Max(0.05f, projectileCollider.bounds.extents.magnitude * 0.5f);
@@ -61,6 +65,7 @@ public class BazookaProjectile : MonoBehaviour
                 if (IsIgnoredCollider(overlappingCollider)) continue;
 
                 Vector3 impactPoint = overlappingCollider.ClosestPoint(sweepOrigin);
+                if (Vector3.Distance(launchPosition, impactPoint) < initialHitboxIgnoreDistance) continue;
                 float distance = (impactPoint - sweepOrigin).sqrMagnitude;
                 if (distance >= nearestOverlapDistance) continue;
 
@@ -89,6 +94,7 @@ public class BazookaProjectile : MonoBehaviour
             {
                 RaycastHit candidate = sweepHits[i];
                 if (IsIgnoredCollider(candidate.collider)) continue;
+                if (distanceTravelled + candidate.distance < initialHitboxIgnoreDistance) continue;
                 if (foundHit && candidate.distance >= nearestHit.distance) continue;
 
                 nearestHit = candidate;
@@ -102,6 +108,7 @@ public class BazookaProjectile : MonoBehaviour
             }
 
             projectileBody.linearVelocity = travelDirection * projectileSpeed;
+            distanceTravelled += travelDistance;
         }
     }
 
@@ -174,15 +181,20 @@ public class BazookaProjectile : MonoBehaviour
         ParticleSystem impactEffect,
         float targetSearchDistance,
         float targetLockAngle,
-        float targetTurnSpeed)
+        float targetTurnSpeed,
+        float initialHitboxIgnoreDistance)
     {
         damage = projectileDamage;
         travelDirection = direction.normalized;
+        launchPosition = projectileCollider.bounds.center;
+        distanceTravelled = 0f;
         projectileSpeed = Mathf.Max(0f, speed);
+        projectileCollider.isTrigger = true;
         impactEffectPrefab = impactEffect;
         this.targetSearchDistance = Mathf.Max(0f, targetSearchDistance);
         this.targetLockAngle = Mathf.Clamp(targetLockAngle, 0f, 45f);
         this.targetTurnSpeed = Mathf.Max(0f, targetTurnSpeed);
+        this.initialHitboxIgnoreDistance = Mathf.Max(0f, initialHitboxIgnoreDistance);
         this.ownerColliders = ownerColliders;
         projectileBody.linearVelocity = travelDirection * projectileSpeed;
 
@@ -215,17 +227,21 @@ public class BazookaProjectile : MonoBehaviour
         if (collision.contactCount > 0)
         {
             ContactPoint contact = collision.GetContact(0);
+            if (Vector3.Distance(launchPosition, contact.point) < initialHitboxIgnoreDistance) return;
             HandleImpact(collision.collider, contact.point, contact.normal);
         }
         else
         {
+            if (Vector3.Distance(launchPosition, transform.position) < initialHitboxIgnoreDistance) return;
             HandleImpact(collision.collider, transform.position, -travelDirection);
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        HandleImpact(other, other.ClosestPoint(transform.position), -travelDirection);
+        Vector3 impactPoint = other.ClosestPoint(transform.position);
+        if (Vector3.Distance(launchPosition, impactPoint) < initialHitboxIgnoreDistance) return;
+        HandleImpact(other, impactPoint, -travelDirection);
     }
 
     private bool IsIgnoredCollider(Collider candidate)
